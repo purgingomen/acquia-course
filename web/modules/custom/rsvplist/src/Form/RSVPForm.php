@@ -73,8 +73,64 @@ class RSVPForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $submitted_email = $form_state->getValue('email');
-    $this->messenger()->addMessage(t('The form is working! You entered @entry',
-      ['@entry' => $submitted_email])); 
+    // $submitted_email = $form_state->getValue('email');
+    // $this->messenger()->addMessage(t('The form is working! You entered @entry',
+    //   ['@entry' => $submitted_email]));
+    try {
+      // Get the current user ID
+      $uid = \Drupal::currentUser()->id();
+
+      //Demonstrate how to get the fully loaded user object for the current user
+      //$full_user =\Drupal\user\Entity\User::load(\Drupal::currentUser()->id());
+
+      //Obtain values as entered into the Form
+      $nid = $form_state->getValue('nid');
+      $email = $form_state->getValue('email'); 
+      
+      $current_time = \Drupal::time()->getRequestTime();
+      // End Phase 1
+
+      // Begin Phase 2: Save the values to the database
+
+      // Start to build a query builder object $query.
+      // https://www.drupal.org/docs/8/api/database-api/insert-queries
+      $query = \Drupal::database()->insert('rsvplist');
+
+      // Specify the fields that the query will insert into.
+
+      $query->fields([
+        'uid',
+        'nid',
+        'mail',
+        'created',
+      ]);
+      
+      // Set the values of the fields we selected.
+      // Note that they must be in the same order as we defined them
+      // in the $query->fields([...]) above.
+      $query->values([
+        $uid,
+        $nid,
+        $email,
+        $current_time,
+      ]);
+
+      // Execute the query!
+      // Drupal handles the exact syntax of the query automatically!
+      $query->execute();
+      // End Phase 2
+      
+      // Begin Phase 3: Display a success message
+
+      // Provide the form submitter a nice message.
+      \Drupal::messenger()->addMessage(
+        t('Thank you for your RSVP, you are on the list for the event!')
+      );
+    }
+    catch (\Exception $e) {
+      \Drupal::messenger()->addError(
+        t('Unable to save RSVP settings at this time due to a database error. Please try again.')
+      );
+    }
   }
 }
